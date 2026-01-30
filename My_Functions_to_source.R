@@ -1,27 +1,3 @@
-########################################### make_unique_png ############################################
-# I want to create a function to automatically check the if the name exist, otherwise it and _1 _2 incrementally.
-
-make_unique_png <- function(path, filename) {
-  full_path <- file.path(path, filename)
-  
-  if (!file.exists(full_path)) {
-    return(full_path)
-  }
-  
-  base <- sub("\\.png$", "", filename)
-  i <- 1
-  
-  repeat {
-    new_name <- paste0(base, "_", i, ".png")
-    new_path <- file.path(path, new_name)
-    if (!file.exists(new_path)) {
-      return(new_path)
-    }
-    i <- i + 1
-  }
-}
-
-
 ######## CREATING A LOOP FOR PLOTING THE HIGHLIGHTS BY ORIG.IDENT ############
 LoopForPlotingHighlights <-  function (provide_object_names,
                                        Reductions = "umap",
@@ -169,7 +145,7 @@ FolderCreationR <-  function(){
 
 
 
-# MODIFIIYING THE FUNCTION OF EMILE TO REALLY USE FIND ALL MARKERS 
+###### MODIFIIYING THE FUNCTION OF EMILE TO REALLY USE FIND ALL MARKERS  ######
 ###### AddMarkers to seurat with FINDALLMARKER for REAL THIS TIME !!!
 # remove the NA cluster temporarly
 # Store the info for cerebro
@@ -221,6 +197,98 @@ AddMarkerGenesToSeurat2_FAM <- function(seuratObj,
   return(seuratObj_saved)
 }
 
+
+########################################### make_unique_png ############################################
+# I want to create a function to automatically check the if the name exist, otherwise it and _1 _2 incrementally.
+
+make_unique_png <- function(path, filename) {
+  full_path <- file.path(path, filename)
+  
+  if (!file.exists(full_path)) {
+    return(full_path)
+  }
+  
+  base <- sub("\\.png$", "", filename)
+  i <- 1
+  
+  repeat {
+    new_name <- paste0(base, "_", i, ".png")
+    new_path <- file.path(path, new_name)
+    if (!file.exists(new_path)) {
+      return(new_path)
+    }
+    i <- i + 1
+  }
+}
+
+
+
+###############################  Automation to plot AUC score cutted by quantiles ############################### 
+PlotAUCscoreByQuantiles <- function(Seurat_Obj , #should be a Seurat Object
+                                    Probs = c(0, 0.25, 0.5, 0.75, 0.9, 0.99),
+                                    Sig_names , #should be a character vector
+                                    OutputFolderPath = getwd(),
+                                    Obj_name = NULL,
+                                    Width = 600,
+                                    Height = 400,
+                                    Res = 100) {
+  
+  require(patchwork)
+  ###### Retreiving Dynamical name under of the real Seurat_obj ONLY when ploting directly OTHERWISE it uses the obj_name already caming from the function above
+  if (is.null(Obj_name)) {
+    Obj_name <- deparse(substitute(Seurat_Obj))
+  }
+  
+  ##### Ploting with threshold
+  for (sig in Sig_names) {
+    # Define the quantiles and keep probs as names
+    thresholds <- quantile(FetchData(Seurat_Obj, vars = sig)[, 1], probs = Probs)
+    names(thresholds) <- Probs  # assign the probs as names
+    
+    message("Plotting all thresholds for ", sig)
+    plots_list <- list()  # store plots for this signature
+    
+    # Safely extract the metadata column as numeric
+    sig_vector <- FetchData(Seurat_Obj, vars = sig)[, 1]
+    
+    
+    for (threshold_name in names(thresholds)) {
+      threshold_value <- thresholds[threshold_name]  # the numeric value
+      
+      # Create a temporary highlight column
+      highlight_col <- paste0(sig, "_highlight_", threshold_name)
+      Seurat_Obj[[highlight_col]] <- ifelse(sig_vector > threshold_value, sig_vector, 0)
+      
+      # Create the FeaturePlot
+      p <- FeaturePlot(Seurat_Obj, features = highlight_col) +
+        ggtitle(paste0(sig, " (quantile ", threshold_name, ")")) +
+        NoLegend()
+      
+      plots_list[[threshold_name]] <- p
+    }
+    
+    # Combine all plots with patchwork
+    ncol_layout <- ceiling(sqrt(length(thresholds)))
+    combined_plot <- wrap_plots(plots_list, ncol = ncol_layout)
+    
+    # Save as a single PNG
+    png(filename = paste0(OutputFolderPath,Obj_name,"_", sig, ".png"),
+        width = ncol_layout*Width , height = ncol_layout*Height, res = Res)
+    print(combined_plot)
+    dev.off()
+  }
+}
+
+
+
+# #### Example of use
+# PlotAUCscoreByQuantiles(Seurat_Obj = int_obj1,
+#                         Sig_names = names (List_Makers_upper),
+#                         Probs = 0.75,
+#                         OutputFolderPath = "report/4_hiPAR_further_analysis/",
+#                         Width = 1600,
+#                         Height = 1200,
+#                         Res = 150)
 
 
 
@@ -355,75 +423,6 @@ AddSignatureAUCscoreSeuratObject <-  function (
 
 
 
-
-
-
-###############################  Automation to plot AUC score cutted by quantiles ############################### 
-PlotAUCscoreByQuantiles <- function(Seurat_Obj , #should be a Seurat Object
-                                   Probs = c(0, 0.25, 0.5, 0.75, 0.9, 0.99),
-                                   Sig_names , #should be a character vector
-                                   OutputFolderPath = getwd(),
-                                   Obj_name = NULL,
-                                   Width = 600,
-                                   Height = 400,
-                                   Res = 100) {
-    
-    require(patchwork)
-    ###### Retreiving Dynamical name under of the real Seurat_obj ONLY when ploting directly OTHERWISE it uses the obj_name already caming from the function above
-    if (is.null(Obj_name)) {
-      Obj_name <- deparse(substitute(Seurat_Obj))
-    }
-    
-    ##### Ploting with threshold
-    for (sig in Sig_names) {
-      # Define the quantiles and keep probs as names
-      thresholds <- quantile(FetchData(Seurat_Obj, vars = sig)[, 1], probs = Probs)
-      names(thresholds) <- Probs  # assign the probs as names
-      
-      message("Plotting all thresholds for ", sig)
-      plots_list <- list()  # store plots for this signature
-      
-      # Safely extract the metadata column as numeric
-      sig_vector <- FetchData(Seurat_Obj, vars = sig)[, 1]
-      
-    
-        for (threshold_name in names(thresholds)) {
-          threshold_value <- thresholds[threshold_name]  # the numeric value
-          
-          # Create a temporary highlight column
-          highlight_col <- paste0(sig, "_highlight_", threshold_name)
-          Seurat_Obj[[highlight_col]] <- ifelse(sig_vector > threshold_value, sig_vector, 0)
-          
-          # Create the FeaturePlot
-          p <- FeaturePlot(Seurat_Obj, features = highlight_col) +
-            ggtitle(paste0(sig, " (quantile ", threshold_name, ")")) +
-            NoLegend()
-          
-          plots_list[[threshold_name]] <- p
-        }
-        
-    # Combine all plots with patchwork
-    ncol_layout <- ceiling(sqrt(length(thresholds)))
-    combined_plot <- wrap_plots(plots_list, ncol = ncol_layout)
-    
-    # Save as a single PNG
-    png(filename = paste0(OutputFolderPath,Obj_name,"_", sig, ".png"),
-        width = ncol_layout*Width , height = ncol_layout*Height, res = Res)
-    print(combined_plot)
-    dev.off()
-  }
-}
-
-
-
-                                                                    # #### Example of use
-                                                                    # PlotAUCscoreByQuantiles(Seurat_Obj = int_obj1,
-                                                                    #                         Sig_names = names (List_Makers_upper),
-                                                                    #                         Probs = 0.75,
-                                                                    #                         OutputFolderPath = "report/4_hiPAR_further_analysis/",
-                                                                    #                         Width = 1600,
-                                                                    #                         Height = 1200,
-                                                                    #                         Res = 150)
 
 
 
