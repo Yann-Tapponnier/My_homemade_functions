@@ -169,7 +169,7 @@ FolderCreationR <-  function(){
 
 
 
-# MODIFIIYING THE FUNCTION OF EMILE TO REALLY USE FIND ALL MARKERS 
+###### MODIFIIYING THE FUNCTION OF EMILE TO REALLY USE FIND ALL MARKERS  ######
 ###### AddMarkers to seurat with FINDALLMARKER for REAL THIS TIME !!!
 # remove the NA cluster temporarly
 # Store the info for cerebro
