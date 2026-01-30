@@ -421,8 +421,13 @@ AddSignatureAUCscoreSeuratObject <-  function (
 
 
 
-
-
-
+######################## Exporting TABLE of markers ########################
+ExportingTablesOfMarkers <- function (markers, # Markers should be a vector of names
+                                      output_path = getwd()
+                                      ){
+  for (marker in markers){
+    write.table(get(marker), paste0(output_path,marker,".tsv"), sep = "\t", row.names = F)
+  }
+}
 
 
