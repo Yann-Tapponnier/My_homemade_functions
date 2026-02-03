@@ -24,7 +24,7 @@ It contains all the functions I created to use in R in single-cell-RNAseq especi
   # FolderCreationR
   
   # AddMarkerGenesToSeurat2_FAM
-  
+
   # make_unique_png
   
   # PlotAUCscoreByQuantiles
