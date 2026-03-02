@@ -301,7 +301,7 @@ PlotAUCscoreByQuantiles <- function(Seurat_Obj , #should be a Seurat Object
 AddSignatureAUCscoreSeuratObject <-  function (
     Seurat_Obj , # should be seurat obj
     Genesets , # should be named list of marker genes
-    Output_path= getwd(), # need for last /
+    Output_path= paste0(getwd(),"/"), # need for last /
     Plot = F,
     Probs = c(0, 0.25, 0.5, 0.75, 0.9, 0.99),
     verbose = TRUE
@@ -554,3 +554,39 @@ PlotlyForLassoSelection  <- function(Seurat_obj,
               #   Color.by = "NK_Cl3_up_top100_FC",
               #   Threshold = 0.9)
               # 
+
+
+
+
+
+
+
+############################################################################## 
+################################### hdWGCNA ################################## 
+##############################################################################
+# Automation of ploting the regulon scores for a TF of interest in the UMAP with FeaturePlot and saving it in the right folder with the name of the TF and the day of interest (D7 here)
+
+PlotingRegulon_Scores <- function(Seurat_obj, 
+                                  Output_path = getwd(),
+                                  Cur_tf){
+  # select a TF of interest
+  cur_tf <- Cur_tf
+  
+  # add the regulon scores to the Seurat metadata
+  hd1$pos_regulon_score <- pos_regulon_scores[,cur_tf]
+  hd1$neg_regulon_score <- neg_regulon_scores[,cur_tf]
+  
+  # plot using FeaturePlot
+  p1 <- FeaturePlot(hd1, feature=cur_tf) + umap_theme()
+  p2 <- FeaturePlot(hd1, feature='pos_regulon_score', cols=c('lightgrey', 'red')) + umap_theme()
+  p3 <- FeaturePlot(hd1, feature='neg_regulon_score', cols=c('lightgrey', 'seagreen')) + umap_theme()
+  
+  png(filename = paste0(Output_path, cur_tf, "_D7.png"), width = 2400, height = 900, res = 150)
+  print(p1 | p2 | p3)
+  dev.off()
+  
+  print(p1 | p2 | p3)
+  
+}
+
+ 
