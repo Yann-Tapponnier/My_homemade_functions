@@ -566,37 +566,39 @@ PlotlyForLassoSelection  <- function(Seurat_obj,
 ##############################################################################
 # Automation of ploting the regulon scores for a TF of interest in the UMAP with FeaturePlot and saving it in the right folder with the name of the TF and the day of interest (D7 here)
 
-# PlotingRegulon_Scores <- function(Seurat_obj, 
-#                                   Output_path = getwd(),
-#                                   Cur_tf){
-#   # select a TF of interest
-#   cur_tf <- Cur_tf
-#   
-#   # add the regulon scores to the Seurat metadata
-#   hd1$pos_regulon_score <- pos_regulon_scores[,cur_tf]
-#   hd1$neg_regulon_score <- neg_regulon_scores[,cur_tf]
-#   
-#   # plot using FeaturePlot
-#   p1 <- FeaturePlot(hd1, feature=cur_tf) + umap_theme()
-#   p2 <- FeaturePlot(hd1, feature='pos_regulon_score', cols=c('lightgrey', 'red')) + umap_theme()
-#   p3 <- FeaturePlot(hd1, feature='neg_regulon_score', cols=c('lightgrey', 'seagreen')) + umap_theme()
-#   
-#   png(filename = paste0(Output_path, cur_tf, "_D7.png"), width = 2400, height = 900, res = 150)
-#   print(p1 | p2 | p3)
-#   dev.off()
-#   
-#   print(p1 | p2 | p3)
-#   
-# }
+PlotingRegulon_Scores <- function(Seurat_obj, 
+                                  Output_path = getwd(),
+                                  Sufixe_name = "",
+                                  Cur_tfs){
+  
+  for (Cur_tf in Cur_tfs){
+    # select a TF of interest
+    cur_tf <- Cur_tf
+    
+    # add the regulon scores to the Seurat metadata
+    hd1$pos_regulon_score <- pos_regulon_scores[,cur_tf]
+    hd1$neg_regulon_score <- neg_regulon_scores[,cur_tf]
+    
+    # plot using FeaturePlot
+    p1 <- FeaturePlot(hd1, feature=cur_tf) + umap_theme()
+    p2 <- FeaturePlot(hd1, feature='pos_regulon_score', cols=c('lightgrey', 'red')) + umap_theme()
+    p3 <- FeaturePlot(hd1, feature='neg_regulon_score', cols=c('lightgrey', 'seagreen')) + umap_theme()
+    
+    png(filename = paste0(Output_path, cur_tf, Sufixe_name ".png"), width = 2400, height = 900, res = 150)
+    print(p1 | p2 | p3)
+    dev.off()
+    
+    print(p1 | p2 | p3)
+    
+  }
+}
 
-PlotingRegulon_Scores(Seurat_obj = hd1,
-                          Output_path = "report/7_hiPAR_hdWGCNA_D7_Transcription_Factor/hdWGCNA_Regulons_Scores/",
-                          Cur_tf = "POU5F1")
 
-PlotingRegulon_Scores(Seurat_obj = hd1,
-                      Output_path = "report/7_hiPAR_hdWGCNA_D7_Transcription_Factor/hdWGCNA_Regulons_Scores/",
-                      Cur_tf = "TFAP2C")
-
+# PlotingRegulon_Scores(Seurat_obj = hd1,
+#                           Output_path = "report/7_hiPAR_hdWGCNA_D7_Transcription_Factor/hdWGCNA_Regulons_Scores/",
+#                           Sufixe_name = "_D7",
+#                           Cur_tf = "POU5F1")
+# 
 
 
 
