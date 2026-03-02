@@ -584,7 +584,7 @@ PlotingRegulon_Scores <- function(Seurat_obj,
     p2 <- FeaturePlot(hd1, feature='pos_regulon_score', cols=c('lightgrey', 'red')) + umap_theme()
     p3 <- FeaturePlot(hd1, feature='neg_regulon_score', cols=c('lightgrey', 'seagreen')) + umap_theme()
     
-    png(filename = paste0(Output_path, cur_tf, Sufixe_name ".png"), width = 2400, height = 900, res = 150)
+    png(filename = paste0(Output_path, cur_tf, Sufixe_name, ".png"), width = 2400, height = 900, res = 150)
     print(p1 | p2 | p3)
     dev.off()
     
