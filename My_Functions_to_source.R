@@ -565,26 +565,59 @@ PlotlyForLassoSelection  <- function(Seurat_obj,
 ################################### hdWGCNA ################################## 
 ##############################################################################
 # Automation of ploting the regulon scores for a TF of interest in the UMAP with FeaturePlot and saving it in the right folder with the name of the TF and the day of interest (D7 here)
-
 PlotingRegulon_Scores <- function(Seurat_obj, 
                                   Output_path = getwd(),
                                   Sufixe_name = "",
                                   Cur_tfs){
   
-  for (Cur_tf in Cur_tfs){
+  ####### QCs ############
+  if (!inherits(Seurat_obj, "Seurat")) {
+    stop("Seurat_obj is not a Seurat object.")
+  }
+  message("✓ Seurat object detected")
+  
+  
+  ########## Validation of the presence of the regulon scores in the metadata ############
+  # TFs present in both matrices
+  common_tfs <- intersect(colnames(pos_regulon_scores),
+                          colnames(neg_regulon_scores))
+  
+  # Keep only requested TFs that are valid
+  sub_cur_tfs <- intersect(Cur_tfs, common_tfs)
+  
+            # Report missing TFs
+            removed_tfs <- setdiff(Cur_tfs, sub_cur_tfs)
+            
+            if (length(removed_tfs) > 0) {
+              message("⚠ Removed TFs not present in BOTH regulon matrices: ",
+                      paste(removed_tfs, collapse = ", "))
+            }
+            
+            if (length(sub_cur_tfs) == 0) {
+              stop("None of the requested TFs are present in both regulon matrices.")
+            }
+  
+  message("✓ Number of TFs retained for plotting: ", length(sub_cur_tfs))
+   
+  # retreiving the name of the Seurat object for naming the output files         
+  seurat_obj_name <- deparse(substitute(Seurat_obj))
+            
+  ###### Ploting ###########
+  for (Cur_tf in sub_cur_tfs){
     # select a TF of interest
     cur_tf <- Cur_tf
-    
+    paste0(Output_path, cur_tf, Sufixe_name, ".png")
+    # 
     # add the regulon scores to the Seurat metadata
-    hd1$pos_regulon_score <- pos_regulon_scores[,cur_tf]
-    hd1$neg_regulon_score <- neg_regulon_scores[,cur_tf]
+    Seurat_obj$pos_regulon_score <- pos_regulon_scores[,cur_tf]
+    Seurat_obj$neg_regulon_score <- neg_regulon_scores[,cur_tf]
     
     # plot using FeaturePlot
-    p1 <- FeaturePlot(hd1, feature=cur_tf) + umap_theme()
-    p2 <- FeaturePlot(hd1, feature='pos_regulon_score', cols=c('lightgrey', 'red')) + umap_theme()
-    p3 <- FeaturePlot(hd1, feature='neg_regulon_score', cols=c('lightgrey', 'seagreen')) + umap_theme()
+    p1 <- FeaturePlot(Seurat_obj, feature=cur_tf) + umap_theme()
+    p2 <- FeaturePlot(Seurat_obj, feature='pos_regulon_score', cols=c('lightgrey', 'red')) + umap_theme()
+    p3 <- FeaturePlot(Seurat_obj, feature='neg_regulon_score', cols=c('lightgrey', 'seagreen')) + umap_theme()
     
-    png(filename = paste0(Output_path, cur_tf, Sufixe_name, ".png"), width = 2400, height = 900, res = 150)
+    png(filename = paste0(Output_path,seurat_obj_name,"_", cur_tf, Sufixe_name, ".png"), width = 2400, height = 900, res = 150)
     print(p1 | p2 | p3)
     dev.off()
     
