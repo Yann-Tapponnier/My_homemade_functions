@@ -637,7 +637,114 @@ PlotingRegulon_Scores <- function(Seurat_obj,
 
 
 
+############################################################################################################################################################
+# =============================================================================
+# Leiden clustering — sweep de résolutions + UMAP
+# =============================================================================
+
+# ── Paramètres ────────────────────────────────────────────────────────────────
+FindNeighborsLeidenMultiRes <- function (Seurat_obj,
+                                         K = 20 , # voisins pour le KNN / SNN graph
+                                         RESOLUTIONS = 0.5,    # résolutions à tester
+                                         DIMS = 1:30, 
+                                         OutputPath = "Report/") {   # dimensions PCA utilisées
+  # Name of the object
+  Name_Obj <- deparse(substitute(Seurat_obj))
+  
+  # ── 1. KNN / SNN graph ───────────────────────────────────────────────────────
+  
+  Seurat_obj <- FindNeighbors(Seurat_obj, dims = DIMS, k.param = K, verbose = FALSE)
+  
+  # ── 2. Leiden à chaque résolution ────────────────────────────────────────────
+  
+  # FindClusters avec algorithm = 4 → Leiden natif dans Seurat
+  for (res in RESOLUTIONS) {
+    Seurat_obj <- FindClusters(
+      Seurat_obj,
+      algorithm        = 4,       # 4 = Leiden
+      resolution       = res,
+      random.seed      = 42,
+      verbose          = FALSE
+    )
+    # Renommer la colonne pour garder chaque résolution
+    col_name <- paste0("leiden_", res)
+    Seurat_obj[[col_name]] <- Seurat_obj$seurat_clusters
+  }
+  
+  # ── 3. UMAP — un panel par résolution ────────────────────────────────────────
+  plots <- lapply(RESOLUTIONS, function(res) {
+    col_name  <- paste0("leiden_", res)
+    n_clusters <- nlevels(Seurat_obj[[col_name]][, 1])
+    
+    DimPlot(Seurat_obj, group.by = col_name, label = TRUE, label.size = 3,
+            repel = TRUE, pt.size = 0.3) +
+      labs(title = paste0("res = ", res, "  (", n_clusters, " clusters)")) +
+      theme_classic(base_size = 10) +
+      theme(legend.position = "none",
+            plot.title = element_text(face = "bold", size = 10))
+  })
+  
+  p_final <- wrap_plots(plots, ncol = ceiling(sqrt(length(RESOLUTIONS)))) +
+    plot_annotation(title    = paste0("Leiden — sweep de résolutions  (K = ", K, ")"),
+                    theme    = theme(plot.title = element_text(face = "bold", size = 13)))
+  
+  ggsave(paste0(OutputPath,Name_Obj,"_leiden_umap_sweep.pdf"), p_final, width = 5 * ceiling(sqrt(length(RESOLUTIONS))),
+         height = 5 * ceiling(length(RESOLUTIONS) / ceiling(sqrt(length(RESOLUTIONS)))))
+  
+  message("✓ Fichier sauvegardé : leiden_umap_sweep.pdf")
+  return(Seurat_obj)
+}
 
 
+
+              # exemple :
+              #   FindNeighborsLeidenMultiRes (Seurat_obj,
+              #                                K = 20 , # voisins pour le KNN / SNN graph
+              #                                RESOLUTIONS = seq(0.1,1,0.1),    # résolutions à tester
+              #                                DIMS = 1:30, 
+              #                                OutputPath = "Report/3_RA_integration_clustering") 
+              # 
+
+################################################################################################
+#################### Basic function to convert human to mouse gene names ########################
+# BiocManager::install("orthogene")
+
+# method = "homologene"  # ✅ local, ultra-rapide, coverage correct
+# method = "gprofiler"   # requête réseau mais meilleure coverage
+# method = "babelgene"   # autre base locale, bonne alternative
+
+# Basic function to convert human to mouse gene names
+convertHumanToMouseGeneList  <- function(x) {
+  require("orthogene")
+  
+  human_genes <- orthogene::convert_orthologs(
+    gene_df        = x,
+    input_species  = "human",
+    output_species = "mouse",
+    method         = "homologene"
+  )
+  
+  humanx <- rownames(human_genes)
+  print(head(humanx))
+  return(humanx)
+}
+
+# Basic function to convert mouse to human gene names
+convertMouseToHumanGeneList <- function(x) {
+  require("orthogene")
+  
+  human_genes <- orthogene::convert_orthologs(
+    gene_df        = x,
+    input_species  = "mouse",
+    output_species = "human",
+    method         = "homologene"
+  )
+  
+  humanx <- rownames(human_genes)
+  print(head(humanx))
+  return(humanx)
+}
+
+                                        # Exemple Humangenes <- convertMouseToHumanGeneList(MouseGenes)
 
 
