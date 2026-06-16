@@ -224,42 +224,44 @@ make_unique_png <- function(path, filename) {
 
 
 ###############################  Automation to plot AUC score cutted by quantiles ############################### 
-PlotAUCscoreByQuantiles <- function(Seurat_Obj , #should be a Seurat Object
+PlotAUCscoreByQuantiles <- function(Seurat_Obj,
                                     Probs = c(0, 0.25, 0.5, 0.75, 0.9, 0.99),
-                                    Sig_names , #should be a character vector
+                                    Sig_names,
                                     OutputFolderPath = getwd(),
                                     Obj_name = NULL,
                                     Width = 600,
                                     Height = 400,
-                                    Res = 100) {
+                                    Res = 100,
+                                    Wrapped_plot = FALSE,
+                                    Suffixe = NULL) { # Should be the Sig_names general name when wrapped_plot is used ex "Scheibinger_signatures"
   
   require(patchwork)
-  ###### Retreiving Dynamical name under of the real Seurat_obj ONLY when ploting directly OTHERWISE it uses the obj_name already caming from the function above
+  if (!dir.exists(OutputFolderPath)) dir.create(OutputFolderPath, recursive = TRUE)
+  
   if (is.null(Obj_name)) {
     Obj_name <- deparse(substitute(Seurat_Obj))
   }
   
-  ##### Ploting with threshold
+  # ── WRAPPED : on accumule tous les plots de toutes les signatures ──
+  if (Wrapped_plot) {
+    all_plots <- list()
+  }
+  
   for (sig in Sig_names) {
-    # Define the quantiles and keep probs as names
+    
     thresholds <- quantile(FetchData(Seurat_Obj, vars = sig)[, 1], probs = Probs)
-    names(thresholds) <- Probs  # assign the probs as names
-    
+    names(thresholds) <- Probs
     message("Plotting all thresholds for ", sig)
-    plots_list <- list()  # store plots for this signature
     
-    # Safely extract the metadata column as numeric
     sig_vector <- FetchData(Seurat_Obj, vars = sig)[, 1]
-    
+    plots_list <- list()
     
     for (threshold_name in names(thresholds)) {
-      threshold_value <- thresholds[threshold_name]  # the numeric value
+      threshold_value <- thresholds[threshold_name]
       
-      # Create a temporary highlight column
       highlight_col <- paste0(sig, "_highlight_", threshold_name)
       Seurat_Obj[[highlight_col]] <- ifelse(sig_vector > threshold_value, sig_vector, 0)
       
-      # Create the FeaturePlot
       p <- FeaturePlot(Seurat_Obj, features = highlight_col) +
         ggtitle(paste0(sig, " (quantile ", threshold_name, ")")) +
         NoLegend()
@@ -267,15 +269,37 @@ PlotAUCscoreByQuantiles <- function(Seurat_Obj , #should be a Seurat Object
       plots_list[[threshold_name]] <- p
     }
     
-    # Combine all plots with patchwork
-    ncol_layout <- ceiling(sqrt(length(thresholds)))
-    combined_plot <- wrap_plots(plots_list, ncol = ncol_layout)
+    if (Wrapped_plot) {
+      # ✅ Accumule les plots de cette signature dans la liste globale
+      all_plots <- c(all_plots, plots_list)
+      
+    } else {
+      # ✅ Sauvegarde un PNG par signature
+      ncol_layout <- ceiling(sqrt(length(thresholds)))
+      combined_plot <- wrap_plots(plots_list, ncol = ncol_layout)
+      
+      png(filename = paste0(OutputFolderPath, Obj_name, "_", sig, ".png"),
+          width = ncol_layout * Width,
+          height = ncol_layout * Height,
+          res = Res)
+      print(combined_plot)
+      dev.off()
+    }
+  }
+  
+  # ✅ Wrapped : sauvegarde un seul PNG avec toutes les signatures
+  if (Wrapped_plot) {
+    ncol_layout <- ceiling(sqrt(length(all_plots)))
+    combined_plot <- wrap_plots(all_plots, ncol = ncol_layout)
     
-    # Save as a single PNG
-    png(filename = paste0(OutputFolderPath,Obj_name,"_", sig, ".png"),
-        width = ncol_layout*Width , height = ncol_layout*Height, res = Res)
+    png(filename = paste0(OutputFolderPath, Obj_name, "_all_signatures_",Suffixe,".png"),
+        width = ncol_layout * Width,
+        height = ncol_layout * Height,
+        res = Res)
     print(combined_plot)
     dev.off()
+    
+    message("Saved wrapped plot: ", Obj_name, "_all_signatures.png")
   }
 }
 
@@ -429,6 +453,35 @@ ExportingTablesOfMarkers <- function (markers, # Markers should be a vector of n
     write.table(get(marker), paste0(output_path,marker,".tsv"), sep = "\t", row.names = F)
   }
 }
+
+
+######################## Exporting TABLE of markers from Seurat object ########################
+ExportingTablesOfMarkersFromSeuratObj <- function(Seurat_obj,
+                                                  Vec_markers = NULL,
+                                                  output_path = getwd()) {
+  
+  # ✅ Crée le dossier si il n'existe pas (récursif)
+  if (!dir.exists(output_path)) {
+    dir.create(output_path, recursive = TRUE)
+    message("Created output directory: ", output_path)
+  } else {
+    message("Output directory already exists: ", output_path)
+  }
+  
+  if (is.null(Vec_markers)) {
+    Markers_lists <- names(Seurat_obj@misc$marker_genes$cerebro_seurat)[
+      !grepl("only", names(Seurat_obj@misc$marker_genes$cerebro_seurat))
+    ]
+  } else {
+    Markers_lists <- Vec_markers
+  }
+  
+  for (Markers in Markers_lists) {
+    df <- Seurat_obj@misc$marker_genes$cerebro_seurat[[Markers]]
+    write.table(df, paste0(output_path, "/", Markers, ".tsv"), sep = "\t", row.names = FALSE)
+  }
+}
+
 
 
 
