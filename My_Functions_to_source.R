@@ -308,11 +308,10 @@ PlotAUCscoreByQuantiles <- function(Seurat_Obj,
 # #### Example of use
 # PlotAUCscoreByQuantiles(Seurat_Obj = int_obj1,
 #                         Sig_names = names (List_Makers_upper),
-#                         Probs = 0.75,
-#                         OutputFolderPath = "report/4_hiPAR_further_analysis/",
-#                         Width = 1600,
-#                         Height = 1200,
-#                         Res = 150)
+
+
+
+
 
 
 
@@ -799,5 +798,234 @@ convertMouseToHumanGeneList <- function(x) {
 }
 
                                         # Exemple Humangenes <- convertMouseToHumanGeneList(MouseGenes)
+
+
+
+
+
+
+
+
+##################### 
+PlotingRepartitionByCluster <- function(
+    Seurat_Obj,
+    Clustering,
+    outputpath = ".",
+    plot_bar = TRUE,
+    plot_box = FALSE,
+    plot_stacked = TRUE
+){
+  
+  library(ggplot2)
+  library(patchwork)
+  Obj_name <- deparse(substitute(Seurat_Obj))
+  for (Clusters in Clustering){
+    
+    barplot_list <- list()
+    boxplot_list <- list()
+    
+    ## =========================
+    ## TABLE: orig.ident × cluster
+    ## =========================
+    prop_table <- prop.table(
+      table(
+        Seurat_Obj$orig.ident,
+        Seurat_Obj@meta.data[[Clusters]]
+      ),
+      margin = 2
+    )
+    
+    prop_df <- as.data.frame(prop_table)
+    colnames(prop_df) <- c("orig.ident", "cluster", "proportion")
+    
+    ## =========================================================
+    ## BAR + BOX PER CLUSTER (same as before)
+    ## =========================================================
+    for (cl in unique(prop_df$cluster)){
+      
+      tmp <- subset(prop_df, cluster == cl)
+      
+      ## ---------------- BARPLOT ----------------
+      if (plot_bar){
+        
+        p_bar <- ggplot(tmp, aes(x = orig.ident, y = proportion)) +
+          geom_bar(stat = "identity") +
+          ggtitle(paste0(Clusters, " - Cluster ", cl)) +
+          theme_bw() +
+          theme(axis.text.x = element_text(angle = 45, hjust = 1))
+        
+        barplot_list[[paste0("cluster_", cl)]] <- p_bar
+      }
+      
+      ## ---------------- BOXPLOT ----------------
+      if (plot_box){
+        
+        p_box <- ggplot(tmp, aes(x = orig.ident, y = proportion)) +
+          geom_boxplot() +
+          ggtitle(paste0(Clusters, " - Cluster ", cl)) +
+          theme_bw()
+        
+        boxplot_list[[paste0("cluster_", cl)]] <- p_box
+      }
+    }
+    
+    ## =========================================================
+    ## STACKED BARPLOT (REPLACES HISTOGRAM)
+    ## =========================================================
+    if (plot_stacked){
+      
+      ## IMPORTANT: normalize by orig.ident for stacked composition
+      prop_table2 <- prop.table(
+        table(
+          Seurat_Obj$orig.ident,
+          Seurat_Obj@meta.data[[Clusters]]
+        ),
+        margin = 1
+      )
+      
+      stacked_df <- as.data.frame(prop_table2)
+      colnames(stacked_df) <- c("orig.ident", "cluster", "proportion")
+      
+      p_stacked <- ggplot(
+        stacked_df,
+        aes(
+          x = orig.ident,
+          y = proportion,
+          fill = cluster
+        )
+      ) +
+        geom_bar(stat = "identity") +
+        ggtitle(paste0("Cluster composition per orig.ident - ", Clusters)) +
+        ylab("Relative frequency") +
+        xlab("orig.ident") +
+        theme_bw() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
+      outfile_stacked <- file.path(
+        outputpath,
+        paste0(Obj_name,"_Repartition_", Clusters, "_STACKED.png")
+      )
+      
+      png(outfile_stacked, width = 1200, height = 800, res = 150)
+      print(p_stacked)
+      dev.off()
+    }
+    
+    ## =========================================================
+    ## SAVE BARPLOTS
+    ## =========================================================
+    if (plot_bar && length(barplot_list) > 0){
+      
+      nplots <- length(barplot_list)
+      ncol <- ceiling(sqrt(nplots))
+      
+      png(
+        file.path(outputpath, paste0(Obj_name,"_Repartition_", Clusters, "_BARPLOTS.png")),
+        width = 400 * ncol,
+        height = 400 * ceiling(nplots / ncol),
+        res = 100
+      )
+      
+      print(wrap_plots(barplot_list, ncol = ncol))
+      dev.off()
+    }
+    
+    ## =========================================================
+    ## SAVE BOXPLOTS
+    ## =========================================================
+    if (plot_box && length(boxplot_list) > 0){
+      
+      nplots <- length(boxplot_list)
+      ncol <- ceiling(sqrt(nplots))
+      
+      png(
+        file.path(outputpath, paste0(Obj_name,"_Repartition_", Clusters, "_BOXPLOTS.png")),
+        width = 400 * ncol,
+        height = 400 * ceiling(nplots / ncol),
+        res = 100
+      )
+      
+      print(wrap_plots(boxplot_list, ncol = ncol))
+      dev.off()
+    }
+  }
+}
+#                         Probs = 0.75,
+#                         OutputFolderPath = "report/4_hiPAR_further_analysis/",
+#                         Width = 1600,
+#                         Height = 1200,
+#                         Res = 150)
+
+
+
+
+
+                  ########## AJOUT DE COULEUR SPECIFIC À RETRAVAILLER ET INTÉGRÉ
+                        # if (plot_stacked){
+                        #   
+                        #   ## IMPORTANT: normalize by orig.ident for stacked composition
+                        #   prop_table2 <- prop.table(
+                        #     table(
+                        #       Seurat_Obj$orig.ident,
+                        #       Seurat_Obj@meta.data[[Clusters]]
+                        #     ),
+                        #     margin = 1
+                        #   )
+                        #   
+                        #   stacked_df <- as.data.frame(prop_table2)
+                        #   colnames(stacked_df) <- c("orig.ident", "cluster", "proportion")
+                        #   
+                        #   ## --- Palette personnalisée ---
+                        #   # named vector : les noms DOIVENT correspondre aux valeurs de "cluster"
+                        #   # (donc aux levels de Seurat_Obj@meta.data[[Clusters]])
+                        #   if (!is.null(cluster_colors)) {
+                        #     
+                        #     # on vérifie que tous les clusters présents ont une couleur définie
+                        #     missing_clusters <- setdiff(unique(stacked_df$cluster), names(cluster_colors))
+                        #     if (length(missing_clusters) > 0) {
+                        #       warning(paste0(
+                        #         "Pas de couleur définie pour : ",
+                        #         paste(missing_clusters, collapse = ", "),
+                        #         " -> attribution de gris par défaut."
+                        #       ))
+                        #       extra_colors <- setNames(
+                        #         rep("grey80", length(missing_clusters)),
+                        #         missing_clusters
+                        #       )
+                        #       cluster_colors <- c(cluster_colors, extra_colors)
+                        #     }
+                        #     
+                        #     # on force l'ordre des facteurs selon l'ordre du named vector (optionnel mais pratique)
+                        #     stacked_df$cluster <- factor(stacked_df$cluster, levels = names(cluster_colors))
+                        #   }
+                        #   
+                        #   p_stacked <- ggplot(
+                        #     stacked_df,
+                        #     aes(
+                        #       x = orig.ident,
+                        #       y = proportion,
+                        #       fill = cluster
+                        #     )
+                        #   ) +
+                        #     geom_bar(stat = "identity") +
+                        #     ggtitle(paste0("Cluster composition per orig.ident - ", Clusters)) +
+                        #     ylab("Relative frequency") +
+                        #     xlab("orig.ident") +
+                        #     theme_bw() +
+                        #     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                        #   
+                        #   if (!is.null(cluster_colors)) {
+                        #     p_stacked <- p_stacked + scale_fill_manual(values = cluster_colors)
+                        #   }
+                        #   
+                        #   outfile_stacked <- file.path(
+                        #     outputpath,
+                        #     paste0(Obj_name,"_Repartition_", Clusters, "_STACKED.png")
+                        #   )
+                        #   
+                        #   png(outfile_stacked, width = 1200, height = 800, res = 150)
+                        #   print(p_stacked)
+                        #   dev.off()
+                        # }
 
 
