@@ -49,11 +49,11 @@ LoopForPlotingHighlights <-  function (provide_object_names,
       } else {
         message("Folder already exists: ", output_path)
       }
-      
+      Ncol
       if (MultiplePlotOnSingleFile){
       # Printing in Single Plot
       png(filename = paste0(output_path, "/Highlights_",obj_name,"_" ,metadata_to_highlight ,"_", Reductions, ".png") , width = Width, height = Height )
-        print(wrap_plots(plots = P, ncol = Ncol ))
+        print(wrap_plots(plots = P, ncol =  ))
       dev.off() 
     
     } else {
