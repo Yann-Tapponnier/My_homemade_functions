@@ -83,7 +83,7 @@ LoopForPlotingHighlights <-  function (provide_object_names,
 
                 imgs <- list.files(output_path2, full.names = TRUE, pattern = ".png$")
                 # Remmettre dans l'ordre des jours
-                imgs <- imgs[order(as.numeric(sub(".*_D([0-9]+)_.*", "\\1", imgs)))]
+                imgs <- imgs[order(as.numeric(sub(".*_[A-Z]([0-9]+)_.*", "\\1", imgs)))]
                 
                 img_list <- lapply(imgs, image_read)
                 ## join the images together
@@ -101,15 +101,17 @@ LoopForPlotingHighlights <-  function (provide_object_names,
   
 
 
-                                  ##### Exemple of use
-                                  # LoopForPlotingHighlights(provide_object_names = "int_obj1",
-                                  #                          metadata_to_highlight = "orig.ident",
-                                  #                          output_path = "report/4_hiPAR_further_analysis/",
-                                  #                          Width = 1600,
-                                  #                          Height = 1200,
-                                  #                          MultiplePlotOnSingleFile = FALSE,
-                                  #                          TitleSize = 40,
-                                  #                          GifGeneration = FALSE)
+                                  # ##### Exemple of use
+                                  # LoopForPlotingHighlights (provide_object_names = vector,
+                                  #                                        Reductions = "umap",
+                                  #                                        output_path, 
+                                  #                                        Ncol = 2, 
+                                  #                                        Width = 2000, 
+                                  #                                        Height = 2000,
+                                  #                                        metadata_to_highlight= "orig.ident",
+                                  #                                        MultiplePlotOnSingleFile = TRUE,
+                                  #                                        TitleSize = 20,
+                                  #                                        GifGeneration = FALSE)
               
 
 
@@ -480,8 +482,10 @@ ExportingTablesOfMarkersFromSeuratObj <- function(Seurat_obj,
     write.table(df, paste0(output_path, "/", Markers, ".tsv"), sep = "\t", row.names = FALSE)
   }
 }
-
-
+                              # Exemple of use :
+                              # ExportingTablesOfMarkersFromSeuratObj (Seurat_obj = int_obj2,
+                              #                                        Vec_markers = NULL, # if NULL it export every marker list in Seurat_obj@misc$marker_genes$cerebro_seurat
+                              #                                        output_path = "signature/5_NBEI1_integration_clustering_DOX_PlusE14")  # --> Can create folders
 
 
 
@@ -757,7 +761,7 @@ FindNeighborsLeidenMultiRes <- function (Seurat_obj,
               #                                OutputPath = "Report/3_RA_integration_clustering") 
               # 
 
-################################################################################################
+
 #################### Basic function to convert human to mouse gene names ########################
 # BiocManager::install("orthogene")
 
@@ -806,7 +810,7 @@ convertMouseToHumanGeneList <- function(x) {
 
 
 
-##################### 
+#####################  PlotingRepartitionByCluster
 PlotingRepartitionByCluster <- function(
     Seurat_Obj,
     Clustering,
