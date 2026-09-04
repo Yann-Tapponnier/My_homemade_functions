@@ -280,7 +280,7 @@ PlotAUCscoreByQuantiles <- function(Seurat_Obj,
       ncol_layout <- ceiling(sqrt(length(thresholds)))
       combined_plot <- wrap_plots(plots_list, ncol = ncol_layout)
       
-      png(filename = paste0(OutputFolderPath, Obj_name, "_", sig, ".png"),
+      png(filename = paste0(OutputFolderPath, Obj_name, "_", sig,Suffixe, ".png"),
           width = ncol_layout * Width,
           height = ncol_layout * Height,
           res = Res)
@@ -307,11 +307,19 @@ PlotAUCscoreByQuantiles <- function(Seurat_Obj,
 
 
 
-# #### Example of use
-# PlotAUCscoreByQuantiles(Seurat_Obj = int_obj1,
-#                         Sig_names = names (List_Makers_upper),
-
-
+                    # #### Example of use
+                    # PlotAUCscoreByQuantiles(Seurat_Obj = OSKM_NI,
+                    #                         Sig_names = names(Belmonte_all_mouse$Reprog_cell_state_signatures),
+                    #                         Probs = 0.9,
+                    #                         OutputFolderPath = "report/3_RT_EV1_integration_clustering/OSKM_NI/Belmonte/",
+                    #                         Obj_name = NULL,
+                    #                         Height = 1000,
+                    #                         Width = 1600,
+                    #                         Res = 150,
+                    #                         Wrapped_plot = FALSE,
+                    #                         Suffixe = "_quantile_0.9") # Should Start with "_" when single plot  / when wrapped_plot is used, should be the Sig_names general "Scheibinger_signatures"
+                    # 
+                    # 
 
 
 
